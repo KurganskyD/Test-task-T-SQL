@@ -1,0 +1,34 @@
+/*В этой процедуре используется, что то вроде жадного алгоритма размена монет, но только с особенностями под t-sql, требования задания и денежную 
+систему РФ. Основная суть: берем сдачу, делим ее на максимальный имеющийся в наличии номинал и вычитаем из сдачи произведение номинала и кол-во 
+монет этого номинала. Кроме особенности с числом 5, описанной ниже.*/
+CREATE PROCEDURE [dbo].[CountСhange] @price INT --Входной параметр цена
+AS
+DECLARE @sdacha INT, @maxnominal INT, @sdacha1 INT --Объявляем переменные для сдачи и наибольшего номинала, который есть в автомате и на который будем уменьшать сдачу
+DECLARE @temptable table(nominal int NOT NULL, number int NOT NULL) --Объявялем табличную переменную для накопления и вывода результата
+SET @sdacha = ((SELECT SUM(number*nominal) FROM COUSTOMER_COINS) - @price) --Определяем сдачу
+SET @maxnominal = (SELECT MAX(nominal) FROM AUTOMATE_COINS WHERE nominal <= @sdacha and number != 0) --Определеям максимальный номинал
+	WHILE @sdacha > 0 --Объявляем цикл
+		begin
+			SET @sdacha1 = @sdacha --Присваиваем переменной сдача1 переменную сдача
+			IF @maxnominal IS NULL --Если в автомате денег нет, и максимальный номинал = null, то выходим из цикла
+				RETURN 0
+			IF (SELECT number FROM AUTOMATE_COINS WHERE nominal = @maxnominal) >= (@sdacha/@maxnominal) -- Если число монет максимального номинала больше или равно целой части от деления сдачи на максимальный номинал, то:
+				SET @sdacha = @sdacha - @maxnominal*(@sdacha/@maxnominal) --сдача для след.цикла будет равной сдачи текущей - целая часть от деления
+			ELSE --Если число монет рассматриваемого номинала меньше целой части от деления, то берем сколько есть:
+				SET @sdacha = @sdacha - @maxnominal*(SELECT number FROM AUTOMATE_COINS WHERE nominal = @maxnominal)
+			INSERT INTO @temptable VALUES(@maxnominal, ((@sdacha1-@sdacha)/@maxnominal)) --помещаем значение номинала и кол-ва потребовавшегося монет этого номинал в переменную-таблицу
+			IF @sdacha = 0 --Если сдача равна 0 
+				SELECT nominal, number FROM @temptable --то выходим из цикла возвращая таблицу-переменную
+			/*Нижеприведенный цикл для ситуации, когда по условию брать сначала больший номинал, мы берем для сдачи 6 р. 5 р., 
+			пытаемся потом взять 1 р., но рублей нет. Однако полно двушек. В монетной системе РФ только с пятеркой может быть такая 
+			ситуация, поэтому число принимаемых денег как написано в условии задачи можно повышать, вплоть до нынешних 5000 рублей.*/
+			IF @sdacha%2 = 1 and @maxnominal = 5 and (SELECT number FROM AUTOMATE_COINS WHERE nominal = 1) =  0
+				BEGIN
+					SET @maxnominal = 2 
+					SET @sdacha = @sdacha1
+					DELETE FROM @temptable WHERE nominal = 5
+				END
+			ELSE
+				SET @maxnominal = (SELECT MAX(nominal) FROM AUTOMATE_COINS WHERE nominal < @maxnominal and number != 0)
+	END
+RETURN 0

@@ -1,0 +1,44 @@
+CREATE TABLE [dbo].[DRINKS](
+	[name] [varchar](50) NOT NULL,
+	[number] [smallint] NOT NULL,
+	[price] [smallint] NOT NULL
+) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[COUSTOMER_COINS](
+	[nominal] [smallint] NOT NULL,
+	[number] [smallint] NOT NULL
+) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[AUTOMATE_COINS](
+	[nominal] [smallint] NOT NULL,
+	[number] [smallint] NOT NULL
+) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[LIST_OF_COINS](
+	[nominal] [smallint] NOT NULL
+) ON [PRIMARY]
+GO
+
+insert into DRINKS values('Чай','1','25')
+insert into DRINKS values('Капучино','1','39')
+insert into DRINKS values('Какао','1','23')
+insert into DRINKS values('Шоколад','1','31')
+GO
+
+insert into LIST_OF_COINS values('1')
+insert into LIST_OF_COINS values('2')
+insert into LIST_OF_COINS values('5')
+insert into LIST_OF_COINS values('10')
+GO
+
+insert into AUTOMATE_COINS values('1', '10')
+insert into AUTOMATE_COINS values('2', '10')
+insert into AUTOMATE_COINS values('5', '10')
+insert into AUTOMATE_COINS values('10', '10')
+GO
+
+insert into COUSTOMER_COINS values('1', '0')
+insert into COUSTOMER_COINS values('2', '0')
+insert into COUSTOMER_COINS values('5', '0')
+insert into COUSTOMER_COINS values('10', '0')
+GO

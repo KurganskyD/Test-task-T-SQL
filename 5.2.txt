@@ -1,0 +1,19 @@
+/*Если предыдущая процедура приема монет вернула 0, то вызывается эта процедура. Это по сути процедура задания 5, только в ней опущено несколько
+условий, которые осуществляются в предудущих процедурах. Кроме того в отличие от задания 5, проверка, может ли дать сдачу автомат осуществляется в процедуре задания 6 и вызывается этой процедурой. Так как по сути будет дублирование кода.*/
+CREATE PROCEDURE [dbo].[MainProcedure] @product varchar(40) --Определеям входной параматер Вид продукта
+AS
+DECLARE @price INT = (SELECT price FROM DRINKS WHERE name = @product) --Объявляем переменную и присваеваем ей значение цены
+DECLARE @temptable table(nominal int NOT NULL, number int NOT NULL) --Создаем табличную переменную для хранения рез-та другой процедуры
+IF (SELECT SUM(number*nominal) FROM COUSTOMER_COINS) > @price --Проверяем нужно ли дать сдачу
+	BEGIN --Если нужно, то
+	INSERT INTO @temptable EXEC CountChange @price --Присваиваем переменной выходное значение процедуры по расчету сдачи, с входным параметром цены
+	IF (NOT EXISTS(SELECT * FROM @temptable)) --Проверям можем ли мы дать сдачу, т.е. вернула ли процедура непустой результат
+		RETURN 1 --Если не можем то возвращаем 1
+	END --А если сдача на требуется или автомат может ее вернуть выполняем:
+UPDATE AUTOMATE_COINS SET number = AUTOMATE_COINS.number + COUSTOMER_COINS.number --Переносим деньги со счета клиента на счет автомата
+FROM AUTOMATE_COINS INNER JOIN COUSTOMER_COINS ON AUTOMATE_COINS.nominal = COUSTOMER_COINS.nominal 
+UPDATE COUSTOMER_COINS SET number = 0 --Обнуляем счет автомата
+UPDATE DRINKS SET number -= 1 WHERE name LIKE @product --Уменьшаем кол-во напитков на один
+UPDATE AUTOMATE_COINS SET number = AUTOMATE_COINS.number - temptable.number --Вычитаем из кошелька автомата сдачу
+FROM AUTOMATE_COINS INNER JOIN @temptable as temptable ON AUTOMATE_COINS.nominal = temptable.nominal 
+RETURN 0 --Возвращаем 0
